@@ -71,6 +71,10 @@ volume_opts = [
                default=None,
                help='where to store temporary image files if the volume '
                     'driver does not write them directly to the volume'),
+    cfg.BoolOpt('volume_zero',
+                default=True,
+                help='In VolumeDriver, when delete a volume, we will zero the'
+                     ' volume'),
     ]
 
 FLAGS = flags.FLAGS
@@ -147,7 +151,9 @@ class VolumeDriver(object):
         """Deletes a logical volume."""
         # zero out old volumes to prevent data leaking between users
         # TODO(ja): reclaiming space should be done lazy and low priority
-        self._copy_volume('/dev/zero', self.local_path(volume), size_in_g)
+        # NOTE(rongze): add volume_zero flag
+        if FLAGS.volume_zero:
+            self._copy_volume('/dev/zero', self.local_path(volume), size_in_g)
         dev_path = self.local_path(volume)
         if os.path.exists(dev_path):
             self._try_execute('dmsetup', 'remove', '-f', dev_path,
